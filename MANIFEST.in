@@ -1,0 +1,12 @@
+include pyspimosim/*.py
+include pyspimosim/spimosim/*.html
+include pyspimosim/spimosim/*.md
+include pyspimosim/models/*.py
+recursive-include pyspimosim/www/ *
+recursive-include pyspimosim/tests/ *
+recursive-include pyspimosim/spimosim/dsmc/ *
+recursive-include pyspimosim/spimosim/ext_lib/ *
+recursive-include pyspimosim/spimosim/ising/ *
+recursive-include pyspimosim/spimosim/lib/ *
+recursive-include pyspimosim/spimosim/spimosimCreator/ *
+recursive-include pyspimosim/spimosim/template/ *

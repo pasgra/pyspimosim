@@ -1,0 +1,3 @@
+[submodule "spimosim"]
+	path = pyspimosim/spimosim
+	url = https://github.com/pasgra/spimosim.git
