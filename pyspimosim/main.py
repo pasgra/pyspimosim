@@ -75,8 +75,12 @@ def parse_model_backend_dir_arg(args=None):
 def get_parser(models):
     parser = argparse.ArgumentParser(
         add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    subparsers = parser.add_subparsers(
-        title="Available models to run", dest="model")
+
+    if sys.version_info >= (3, 7): # required was added in python3.7
+        subparsers = parser.add_subparsers(title="Available models to run", dest="model", required=True)
+    else:
+        subparsers = parser.add_subparsers(title="Available models to run", dest="model")
+
     _, taken_short_options = create_parser_from_data_class(BackendSettings, parser=parser)
     parser.add_argument('--help', "-h", "-?", action=_HelpAction, help='Help')
 
@@ -123,6 +127,8 @@ def main(custom_tornado_handlers=()):
     models = get_models(parse_model_backend_dir_arg())
     parser = get_parser(models)
     parsed_args = parser.parse_args()
+    if not parsed_args.model:
+        parser.error("the following arguments are required: model")
     Model, ModelBackendSettings = models[parsed_args.model]
     backend_settings, model_backend_settings = to_dataclasses(parsed_args, Model, ModelBackendSettings)
     asyncio.get_event_loop().run_until_complete(start_servers(Model, backend_settings, model_backend_settings, custom_tornado_handlers=custom_tornado_handlers))
