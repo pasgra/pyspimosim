@@ -1,6 +1,6 @@
 [project]
 name = "pyspimosim"
-version = "0.2.12"
+version = "0.2.12.1"
 authors = [
   { name="Pascal Grafe" },
 ]

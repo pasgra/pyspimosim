@@ -138,8 +138,8 @@ def get_pattern_for_all_files_in(dirname):
     pattern = "/+("
     for subdir, _, files in os.walk(dirname):
         for filename in files:
-            filename = os.path.join(subdir[len(dirname):], filename)
-            pattern += "|" + re.escape(filename)
+            file_path = subdir[len(dirname):].split(os.sep) + [filename]
+            pattern += "|" + "/+".join(re.escape(path_part) for path_part in file_path if path_part)
     return pattern + ")?"
 
 async def start_servers(Model, backend_settings, model_backend_settings, custom_tornado_handlers=()):
