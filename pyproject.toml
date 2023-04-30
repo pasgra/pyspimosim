@@ -7,6 +7,7 @@ authors = [
 description = "SpiMoSim"
 readme = "README.md"
 requires-python = ">=3.6"
+license = {file = "ALL_LICENSES.md"}
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -20,6 +21,7 @@ requires = ["setuptools"]
 [tool.setuptools]
 include-package-data = true
 zip-safe = false
+license-files = ["LICENSE.md", "ALL_LICENSES.md"]
 
 [tool.setuptools.packages.find]
 where = ["."]
