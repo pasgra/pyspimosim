@@ -5,7 +5,7 @@ import logging
 import asyncio
 from pyspimosim.model_loader import get_models
 from dataclasses import dataclass, field, fields, MISSING
-from pyspimosim.servers import start_servers
+from pyspimosim.servers import start_servers, start_web_server
 
 
 root_dir = os.path.dirname(__file__)
@@ -76,12 +76,13 @@ def get_parser(models):
     parser = argparse.ArgumentParser(
         add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    if sys.version_info >= (3, 7): # required was added in python3.7
-        subparsers = parser.add_subparsers(title="Available models to run", dest="model", required=True)
-    else:
-        subparsers = parser.add_subparsers(title="Available models to run", dest="model")
+    subparsers = parser.add_subparsers(
+        title="Available models to run", dest="model")
+    subparsers.add_parser(
+        "www_model", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    _, taken_short_options = create_parser_from_data_class(BackendSettings, parser=parser)
+    _, taken_short_options = create_parser_from_data_class(
+        BackendSettings, parser=parser)
     parser.add_argument('--help', "-h", "-?", action=_HelpAction, help='Help')
 
     for model_name, (Model, ModelBackendSettings) in models.items():
@@ -96,20 +97,27 @@ def get_parser(models):
 
     return parser
 
-def to_dataclasses(parsed_args, Model, ModelBackendSettings):
-    not_backend_settings_fields = [f.name for f in fields(ModelBackendSettings)] + ["model"]
-    not_model_backend_settings_fields = [f.name for f in fields(BackendSettings)] + ["model"]
 
-    backend_settings = namespace_to_dataclass(BackendSettings, parsed_args, ignore=not_backend_settings_fields)
-    model_backend_settings = namespace_to_dataclass(ModelBackendSettings, parsed_args, ignore=not_model_backend_settings_fields)
+def to_dataclasses(parsed_args, Model, ModelBackendSettings):
+    not_backend_settings_fields = [
+        f.name for f in fields(ModelBackendSettings)] + ["model"]
+    not_model_backend_settings_fields = [
+        f.name for f in fields(BackendSettings)] + ["model"]
+
+    backend_settings = namespace_to_dataclass(
+        BackendSettings, parsed_args, ignore=not_backend_settings_fields)
+    model_backend_settings = namespace_to_dataclass(
+        ModelBackendSettings, parsed_args, ignore=not_model_backend_settings_fields)
     if backend_settings.www_model_root == "":
         backend_settings.www_model_root = Model.get_www_model_root(root_dir)
-    
+
     return backend_settings, model_backend_settings
+
 
 def setup_logging():
     LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
     logging.basicConfig(level=LOGLEVEL)
+
 
 @dataclass
 class BackendSettings:
@@ -122,16 +130,30 @@ class BackendSettings:
     websocket_port    : int = field(default=8090, metadata={"help": "Port for the websocket server"})
 
 
+async def www_model_main(Model, backend_settings, model_backend_settings, custom_tornado_handlers=()):
+    start_web_server(Model, backend_settings,
+                     model_backend_settings, custom_tornado_handlers=())
+
+    # Start IO/Event loop
+    shutdown_event = asyncio.Event()
+    await shutdown_event.wait()
+
+
 def main(custom_tornado_handlers=()):
     setup_logging()
     models = get_models(parse_model_backend_dir_arg())
     parser = get_parser(models)
     parsed_args = parser.parse_args()
     if not parsed_args.model:
-        parser.error("the following arguments are required: model")
+        parsed_args.model = "www_model"
+
     Model, ModelBackendSettings = models[parsed_args.model]
     backend_settings, model_backend_settings = to_dataclasses(parsed_args, Model, ModelBackendSettings)
-    asyncio.get_event_loop().run_until_complete(start_servers(Model, backend_settings, model_backend_settings, custom_tornado_handlers=custom_tornado_handlers))
+    if parsed_args.model == "www_model":
+        asyncio.get_event_loop().run_until_complete(www_model_main(Model, backend_settings, model_backend_settings, custom_tornado_handlers=custom_tornado_handlers))
+    else:
+        asyncio.get_event_loop().run_until_complete(start_servers(Model, backend_settings, model_backend_settings, custom_tornado_handlers=custom_tornado_handlers))
+
 
 def model_main(Model, ModelBackendSettings, custom_tornado_handlers=()):
     setup_logging()
