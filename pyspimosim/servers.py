@@ -134,12 +134,14 @@ def get_listens_on_message(host, port):
     except Exception as e:
         return default_msg
 
-def get_pattern_for_all_files_in(dirname):
+def get_pattern_for_all_files_in(dirname, index_filename="index.html"):
     pattern = "/+("
     for subdir, _, files in os.walk(dirname):
         for filename in files:
             file_path = subdir[len(dirname):].split(os.sep) + [filename]
             pattern += "|" + "/+".join(re.escape(path_part) for path_part in file_path if path_part)
+            if filename == index_filename:
+                pattern += "|" + "/+".join(re.escape(path_part) for path_part in file_path[:-1] if path_part) + "/*"
     return pattern + ")?"
 
 async def start_servers(Model, backend_settings, model_backend_settings, custom_tornado_handlers=()):
