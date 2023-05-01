@@ -71,7 +71,8 @@ class ProtocolVar:
             self.t_max = t_last
         else:
             # replace
-            self.data[t - self.t_min:t_last - self.t_min + 1] = self.copy_vals(vals)
+            self.data[t - self.t_min:t_last -
+                      self.t_min + 1] = self.copy_vals(vals)
 
     def as_dict(self):
         return {
@@ -213,7 +214,8 @@ class Protocol:
 
     def _update_var(self, name, value):
         if value['type'] in ARRAY_TYPES.keys():
-            self.vars[name] = NPArrayProtocolVar(name, self.t_min, dtype=ARRAY_TYPES[value['type']])
+            self.vars[name] = NPArrayProtocolVar(
+                name, self.t_min, dtype=ARRAY_TYPES[value['type']])
         elif value['type'] in NUMBER_TYPES.keys():
             self.vars[name] = NPProtocolVar(
                 name, self.t_min, dtype=NUMBER_TYPES[value['type']])

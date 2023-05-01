@@ -12,20 +12,23 @@ root_dir = os.path.dirname(__file__)
 default_root_dir = os.path.join(root_dir, "spimosim")
 default_model_backend_dir = os.path.join(root_dir, "models")
 
+
 def namespace_to_dataclass(DataClass, args, ignore=()):
     return DataClass(**{k: v for k, v in vars(args).items() if v is not None and k not in ignore})
 
 
 def create_parser_from_data_class(class_, parser=None, taken_short_options=()):
     if parser is None:
-        parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser = argparse.ArgumentParser(
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     short_options = set(taken_short_options)
 
     for field in sorted(fields(class_), key=lambda f: f.name):
         help_str = field.metadata.get("help", None)
         if field.default == MISSING and field.type != bool:
             if type(field.type) is list:
-                parser.add_argument(field.name, type=field.type[0], nargs="+", help=help_str)
+                parser.add_argument(
+                    field.name, type=field.type[0], nargs="+", help=help_str)
             else:
                 parser.add_argument(field.name, type=field.type, help=help_str)
             continue
@@ -42,9 +45,11 @@ def create_parser_from_data_class(class_, parser=None, taken_short_options=()):
             action = "store_false" if field.default else "store_true"
             parser.add_argument(*options, action=action, help=help_str)
         elif type(field.type) is list:
-            parser.add_argument(*options, type=field.type[0], nargs="+", default=field.default, help=help_str)
+            parser.add_argument(
+                *options, type=field.type[0], nargs="+", default=field.default, help=help_str)
         else:
-            parser.add_argument(*options, type=field.type, nargs="?", default=field.default, help=help_str)
+            parser.add_argument(*options, type=field.type,
+                                nargs="?", default=field.default, help=help_str)
 
     return parser, short_options
 
@@ -121,13 +126,20 @@ def setup_logging():
 
 @dataclass
 class BackendSettings:
-    model_backend_dir : str = field(default=default_model_backend_dir, metadata={"help": "Search directory for models"})
-    www_root          : str = field(default=default_root_dir, metadata={"help": "Root directory for the web server"})
-    www_address       : str = field(default="0.0.0.0", metadata={"help": "IP address for the web server"})
-    www_port          : int = field(default=8000, metadata={"help": "Port for the web server"})
-    www_model_root    : str = field(default="", metadata={"help": "Directory containing index.html, model_config.js, model_info.html for model"})
-    websocket_address : str = field(default="0.0.0.0", metadata={"help": "IP address for the websocket server"})
-    websocket_port    : int = field(default=8090, metadata={"help": "Port for the websocket server"})
+    model_backend_dir: str = field(default=default_model_backend_dir, metadata={
+                                   "help": "Search directory for models"})
+    www_root: str = field(default=default_root_dir, metadata={
+                          "help": "Root directory for the web server"})
+    www_address: str = field(default="0.0.0.0", metadata={
+                             "help": "IP address for the web server"})
+    www_port: int = field(default=8000, metadata={
+                          "help": "Port for the web server"})
+    www_model_root: str = field(default="", metadata={
+                                "help": "Directory containing index.html, model_config.js, model_info.html for model"})
+    websocket_address: str = field(default="0.0.0.0", metadata={
+                                   "help": "IP address for the websocket server"})
+    websocket_port: int = field(default=8090, metadata={
+                                "help": "Port for the websocket server"})
 
 
 async def www_model_main(Model, backend_settings, model_backend_settings, custom_tornado_handlers=()):
@@ -148,17 +160,24 @@ def main(custom_tornado_handlers=()):
         parsed_args.model = "www_model"
 
     Model, ModelBackendSettings = models[parsed_args.model]
-    backend_settings, model_backend_settings = to_dataclasses(parsed_args, Model, ModelBackendSettings)
+    backend_settings, model_backend_settings = to_dataclasses(
+        parsed_args, Model, ModelBackendSettings)
     if parsed_args.model == "www_model":
-        asyncio.get_event_loop().run_until_complete(www_model_main(Model, backend_settings, model_backend_settings, custom_tornado_handlers=custom_tornado_handlers))
+        asyncio.get_event_loop().run_until_complete(www_model_main(Model, backend_settings,
+                                                                   model_backend_settings, custom_tornado_handlers=custom_tornado_handlers))
     else:
-        asyncio.get_event_loop().run_until_complete(start_servers(Model, backend_settings, model_backend_settings, custom_tornado_handlers=custom_tornado_handlers))
+        asyncio.get_event_loop().run_until_complete(start_servers(Model, backend_settings,
+                                                                  model_backend_settings, custom_tornado_handlers=custom_tornado_handlers))
 
 
 def model_main(Model, ModelBackendSettings, custom_tornado_handlers=()):
     setup_logging()
-    parser, taken_short_options = create_parser_from_data_class(BackendSettings)
-    create_parser_from_data_class(ModelBackendSettings, parser=parser, taken_short_options=taken_short_options)
+    parser, taken_short_options = create_parser_from_data_class(
+        BackendSettings)
+    create_parser_from_data_class(
+        ModelBackendSettings, parser=parser, taken_short_options=taken_short_options)
     parsed_args = parser.parse_args()
-    backend_settings, model_backend_settings = to_dataclasses(parsed_args, Model, ModelBackendSettings)
-    asyncio.get_event_loop().run_until_complete(start_servers(Model, backend_settings, model_backend_settings, custom_tornado_handlers=custom_tornado_handlers))
+    backend_settings, model_backend_settings = to_dataclasses(
+        parsed_args, Model, ModelBackendSettings)
+    asyncio.get_event_loop().run_until_complete(start_servers(Model, backend_settings,
+                                                              model_backend_settings, custom_tornado_handlers=custom_tornado_handlers))

@@ -4,8 +4,10 @@ import asyncio
 from abc import ABC, abstractmethod, abstractproperty
 from dataclasses import dataclass
 
+
 class NoMoreDataException(Exception):
     pass
+
 
 class BaseModel(ABC):
     '''
@@ -18,7 +20,7 @@ class BaseModel(ABC):
     '''
     multi_step = False
     save_state_after_init = True
-    
+
     @classmethod
     def get_www_model_root(cls, root_dir):
         return os.path.join(root_dir, "www", cls.name)

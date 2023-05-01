@@ -15,6 +15,7 @@ from pyspimosim.base_model import BaseModel, NoMoreDataException, ModelBackendSe
 class CSVPipeReaderEOF(Exception):
     pass
 
+
 def to_numbers(obj):
     if type(obj) is list:
         return [to_numbers(o) for o in obj]
@@ -37,6 +38,7 @@ def to_numbers(obj):
 
 class NoEOFReader(io.BufferedReader):
     __buf = b""
+
     def read(self, size=-1):
         buf = super().read(size=size)
         while len(buf) < size:
@@ -74,9 +76,8 @@ class CSVPipeReader:
         if not os.path.exists(path):
             os.system(f"mkfifo {path}")
 
-
         self.data_file_fields = data_file_fields
-        if any(callable(func_or_factor)  for key, func_or_factor in data_file_fields):
+        if any(callable(func_or_factor) for key, func_or_factor in data_file_fields):
             self._convert_using_function = True
             self._functions = []
             for i, (key, func_or_factor) in enumerate(data_file_fields):
@@ -85,7 +86,8 @@ class CSVPipeReader:
                 else:
                     self._functions.append(lambda x: func_or_factor * x)
         else:
-            self._factors = np.array([factor for key, factor in data_file_fields])
+            self._factors = np.array(
+                [factor for key, factor in data_file_fields])
             self._convert_using_function = False
 
         self._skip_lines = skip_lines
@@ -93,7 +95,8 @@ class CSVPipeReader:
 
         self.file = None
         self.block_size = block_size
-        self.buf = [{key: 0 for key, _ in self.data_file_fields}] * self.block_size
+        self.buf = [{key: 0 for key, _ in self.data_file_fields}
+                    ] * self.block_size
 
     async def open_file(self):
         while not os.path.exists(self.path):
@@ -121,7 +124,7 @@ class CSVPipeReader:
             max_rows = self.block_size
 
         await self.prepare_file()
-        
+
         if self.data_is_final:
             max_tries = self.read_tries_until_done
         else:
@@ -220,7 +223,8 @@ class CSVPipeModel(BaseModel):
             raise NoMoreDataException() from e
 
         for i, (name, _) in enumerate(self.data_file_fields):
-            protocol.vars[name].set_all(t, protocol.vars[name].dtype(self.csv_pipe_reader.buf[:, i]))
+            protocol.vars[name].set_all(
+                t, protocol.vars[name].dtype(self.csv_pipe_reader.buf[:, i]))
 
         t_max = t + len(self.csv_pipe_reader.buf) - 1
         protocol.t_max = t_max
@@ -266,12 +270,20 @@ class InstanceId(str):
             return str(backend.handler.id)
         return str(self)
 
+
 @dataclass
 class ModelBackendSettings(BaseModelBackendSettings):
-    workbasedir: str = field(default=".", metadata={ "help": "The working directory will be <workbasedir>/<instance_id>"})
-    instance_id: InstanceId = field(default=InstanceId("<random number>", use_handler_id=True), metadata={ "help": "The working directory will be <workbasedir>/<instance_id>"})
-    setting_file: str = field(default="settings.csv", metadata={ "help": "File name (inside working directory) for the *.csv file or pipe for settings (and more)"})
-    data_file: str = field(default="data.csv", metadata={ "help": "File name (inside working directory) for the *.csv file or pipe for generated data"})
-    data_file_skiplines: int = field(default=0, metadata={ "help": "Size of the ignored header of the file specified by --output"})
-    no_new_run: bool = field(default=False, metadata={ "help": "Do not generate new data but read existing data from a previous run"})
-    data_is_final: bool = field(default=False, metadata={ "help": "Stop reading after reaching end of file instead of waiting for new data"})
+    workbasedir: str = field(default=".", metadata={
+                             "help": "The working directory will be <workbasedir>/<instance_id>"})
+    instance_id: InstanceId = field(default=InstanceId("<random number>", use_handler_id=True), metadata={
+                                    "help": "The working directory will be <workbasedir>/<instance_id>"})
+    setting_file: str = field(default="settings.csv", metadata={
+                              "help": "File name (inside working directory) for the *.csv file or pipe for settings (and more)"})
+    data_file: str = field(default="data.csv", metadata={
+                           "help": "File name (inside working directory) for the *.csv file or pipe for generated data"})
+    data_file_skiplines: int = field(default=0, metadata={
+                                     "help": "Size of the ignored header of the file specified by --output"})
+    no_new_run: bool = field(default=False, metadata={
+                             "help": "Do not generate new data but read existing data from a previous run"})
+    data_is_final: bool = field(default=False, metadata={
+                                "help": "Stop reading after reaching end of file instead of waiting for new data"})

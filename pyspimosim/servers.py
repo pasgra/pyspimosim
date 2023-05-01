@@ -41,7 +41,8 @@ class ChannelHandler(tornado.websocket.WebSocketHandler):
         self.id = random.randint(0, 1e6)
 
         try:
-            self.backend = ServerSimulationBackend(Model, model_backend_settings, self)
+            self.backend = ServerSimulationBackend(
+                Model, model_backend_settings, self)
         except Exception as e:
             traceback.print_exc()
 
@@ -107,21 +108,21 @@ class ChannelHandler(tornado.websocket.WebSocketHandler):
         self.write_message(msg)
 
 
-
-
 class BackendConfigHandler(tornado.web.RequestHandler):
     def initialize(self, backend_settings, Model):
         self.backend_settings = backend_settings
         self.Model = Model
-    
+
     async def get(self):
         host = self.backend_settings.websocket_address
         if host == "0.0.0.0":
             host = self.request.host.split(":")[0]
-        
+
         self.write(f"var model = '{self.Model.name}';\n")
-        self.write(f"var wsAddress = 'ws://{host}:{self.backend_settings.websocket_port}';\n")
+        self.write(
+            f"var wsAddress = 'ws://{host}:{self.backend_settings.websocket_port}';\n")
         self.set_header("Content-Type", "text/javascript")
+
 
 def get_listens_on_message(host, port):
     default_msg = f"Webserver listens on http://{host}:{port}"
@@ -134,35 +135,47 @@ def get_listens_on_message(host, port):
     except Exception as e:
         return default_msg
 
+
 def get_pattern_for_all_files_in(dirname, index_filename="index.html"):
     pattern = "/+("
     for subdir, _, files in os.walk(dirname):
         for filename in files:
             file_path = subdir[len(dirname):].split(os.sep) + [filename]
-            pattern += "|" + "/+".join(re.escape(path_part) for path_part in file_path if path_part)
+            pattern += "|" + "/+".join(re.escape(path_part)
+                                       for path_part in file_path if path_part)
             if filename == index_filename:
-                pattern += "|" + "/+".join(re.escape(path_part) for path_part in file_path[:-1] if path_part) + "/*"
+                pattern += "|" + "/+".join(re.escape(path_part)
+                                           for path_part in file_path[:-1] if path_part) + "/*"
     return pattern + ")?"
 
+
 async def start_servers(Model, backend_settings, model_backend_settings, custom_tornado_handlers=()):
-    start_websocket_server(Model, backend_settings, model_backend_settings, custom_tornado_handlers=())
-    start_web_server(Model, backend_settings, model_backend_settings, custom_tornado_handlers=())
+    start_websocket_server(Model, backend_settings,
+                           model_backend_settings, custom_tornado_handlers=())
+    start_web_server(Model, backend_settings,
+                     model_backend_settings, custom_tornado_handlers=())
 
     # Start IO/Event loop
     shutdown_event = asyncio.Event()
     await shutdown_event.wait()
 
+
 def start_websocket_server(Model, backend_settings, model_backend_settings, custom_tornado_handlers=()):
     tornado.web.Application([
-        ("/", ChannelHandler, dict(Model=Model, model_backend_settings=model_backend_settings))
+        ("/", ChannelHandler, dict(Model=Model,
+         model_backend_settings=model_backend_settings))
     ]).listen(backend_settings.websocket_port, backend_settings.websocket_address)
+
 
 def start_web_server(Model, backend_settings, model_backend_settings, custom_tornado_handlers=()):
     tornado.web.Application([
-        (get_pattern_for_all_files_in(backend_settings.www_model_root), MimeStaticFileHandler, dict(path=backend_settings.www_model_root, default_filename="index.html")),
-        ("/+backend-config.js", BackendConfigHandler, dict(backend_settings=backend_settings, Model=Model)),
+        (get_pattern_for_all_files_in(backend_settings.www_model_root), MimeStaticFileHandler, dict(
+            path=backend_settings.www_model_root, default_filename="index.html")),
+        ("/+backend-config.js", BackendConfigHandler,
+         dict(backend_settings=backend_settings, Model=Model)),
         *Model.get_tornado_handlers(backend_settings, model_backend_settings),
         *custom_tornado_handlers,
         ("/+(.*)", MimeStaticFileHandler, dict(path=backend_settings.www_root)),
     ]).listen(backend_settings.www_port, backend_settings.www_address)
-    logging.info(get_listens_on_message(backend_settings.www_address, backend_settings.www_port))
+    logging.info(get_listens_on_message(
+        backend_settings.www_address, backend_settings.www_port))

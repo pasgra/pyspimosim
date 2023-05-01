@@ -115,7 +115,8 @@ class ServerSimulationBackend():
     async def change_model_settings(self, user_model_settings, restart):
         try:
             if self.model == None or restart:
-                self.model = self.Model(self, self.model_backend_settings, user_model_settings)
+                self.model = self.Model(
+                    self, self.model_backend_settings, user_model_settings)
             else:
                 self.model.change_settings(user_model_settings)
             return True

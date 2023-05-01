@@ -42,7 +42,8 @@ class Model(BaseModel):
             if (k + self.width) < n:
                 s += sigma[k + width]
 
-            sigma[k] = 1 if random.random() > 1 / (1 + np.exp(betaj * s)) else -1
+            sigma[k] = 1 if random.random() > 1 / \
+                (1 + np.exp(betaj * s)) else -1
         self.state['magnetisation'] = sum(self.state['sigma']) * 1.
 
 
