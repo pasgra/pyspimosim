@@ -236,7 +236,7 @@ class CSVPipeModel(BaseModel):
 
         for i, (name, _) in enumerate(self.data_file_fields):
             protocol.vars[name].set_all(
-                t, protocol.vars[name].dtype(self.csv_pipe_reader.buf[:, i]))
+                t, np.array(self.csv_pipe_reader.buf[:, i], dtype=protocol.vars[name].dtype))
 
         t_max = t + len(self.csv_pipe_reader.buf) - 1
         protocol.t_max = t_max
