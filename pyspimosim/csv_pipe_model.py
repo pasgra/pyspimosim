@@ -37,6 +37,7 @@ def to_numbers(obj):
 
 
 class NoEOFReader(io.BufferedReader):
+    encoding = "UTF-8"
     __buf = b""
 
     def read(self, size=-1):
@@ -58,6 +59,15 @@ class NoEOFReader(io.BufferedReader):
             self.__buf = b""
             return buf
         return b""
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        b = self.readline()
+        if not b:
+            raise StopIteration()
+        return b.decode("UTF-8")
 
 
 class CSVPipeReader:
@@ -137,7 +147,7 @@ class CSVPipeReader:
             raw = None
             for i in count():
                 try:
-                    raw = np.loadtxt(self.file, max_rows=max_rows, ndmin=2)
+                    raw = np.loadtxt(self.file, max_rows=max_rows, ndmin=2, comments=None)
                     if raw.shape[0] != 0:
                         break
                     if i == max_tries:
