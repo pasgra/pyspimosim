@@ -126,8 +126,6 @@ class ServerSimulationBackend():
                 self.invalid_parameter = e.invalid_parameter
                 self.invalid_parameter_msg = e.invalid_parameter_msg
             return False
-        except Exception as e:
-            raise e
 
     async def restart(self, user_model_settings):
         self.pause()
