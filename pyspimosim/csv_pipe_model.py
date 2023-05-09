@@ -130,6 +130,8 @@ class CSVPipeReader:
         else:
             max_tries = -1
 
+        if max_rows:
+            max_rows = min(max_rows, 2**22) # limit to 4 MiB
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             raw = None
