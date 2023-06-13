@@ -33,7 +33,7 @@ The file pyspimosim/spimosim/ext_lib/css/sliders.css contains CSS stylesheets ba
 ```
 
 
-### From file `pyspimosim/spimosim/ext_lib/lib/dygraph/dygraph-2.0.0.min.js` about files under `pyspimosim/spimosim/ext_lib/lib/dygraph/`:
+### From file `pyspimosim/spimosim/ext_lib/lib/dygraph/dygraph.min.js` about files under `pyspimosim/spimosim/ext_lib/lib/dygraph/`:
 
 ```
 --- begin ---
