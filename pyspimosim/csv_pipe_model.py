@@ -128,6 +128,7 @@ class CSVPipeReader:
     def close(self):
         if not self.file is None:
             self.file.close()
+        self.file = None
 
     async def fill_buffer(self, max_rows=None):
         if max_rows is None:
@@ -146,16 +147,12 @@ class CSVPipeReader:
             warnings.simplefilter("ignore")
             raw = None
             for i in count():
-                try:
-                    raw = np.loadtxt(self.file, max_rows=max_rows, ndmin=2, comments=None)
-                    if raw.shape[0] != 0:
-                        break
-                    if i == max_tries:
-                        raise CSVPipeReaderEOF()
-                    await asyncio.sleep(self.sleep_time)
-                except ValueError as e:
-                    if str(e) != "I/O operation on closed file.":
-                        logging.error(e)
+                raw = np.loadtxt(self.file, max_rows=max_rows, ndmin=2, comments=None)
+                if raw.shape[0] != 0:
+                    break
+                if i == max_tries:
+                    raise CSVPipeReaderEOF()
+                await asyncio.sleep(self.sleep_time)
 
             self.buf = raw
 
@@ -184,6 +181,7 @@ class CSVPipeWriter(ABC):
     def close(self):
         if not self.file is None:
             self.file.close()
+        self.file = None
 
     @abstractmethod
     def go_on(self, t):
