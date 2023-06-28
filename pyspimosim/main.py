@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+
+# This script supports autocompletion with argcomplete: PYTHON_ARGCOMPLETE_OK
+
 import sys
 import os
 import argparse
@@ -181,3 +185,7 @@ def model_main(Model, ModelBackendSettings, custom_tornado_handlers=()):
         parsed_args, Model, ModelBackendSettings)
     asyncio.get_event_loop().run_until_complete(start_servers(Model, backend_settings,
                                                               model_backend_settings, custom_tornado_handlers=custom_tornado_handlers))
+
+
+if __name__ == '__main__':
+    main()
