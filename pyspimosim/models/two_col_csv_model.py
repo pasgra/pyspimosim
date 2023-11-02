@@ -6,7 +6,7 @@ import os
 from dataclasses import dataclass, field
 from pyspimosim.main import model_main, root_dir
 from pyspimosim.base_model import ModelBackendSettings as BaseModelBackendSettings
-from pyspimosim.csv_pipe_model import CSVPipeModel, CSVPipeWriter, InstanceId
+from pyspimosim.csv_pipe_model import CSVPipeModel, CSVPipeWriter, InstanceId, to_numbers
 
 
 class Model(CSVPipeModel):
@@ -19,13 +19,16 @@ class Model(CSVPipeModel):
     settings_fields = []
 
     def init_pipe_writer(self, model_backend_settings):
-        self.csv_pipe_writer = Writer("settings-out.csv", self.settings_fields)
-
-
-class Writer(CSVPipeWriter):
-    def go_on(self, t):
         pass
+        #self.csv_pipe_writer = CSVPipeWriter("settings-out.csv", self.settings_fields)
+        #self.csv_pipe_writer.open_file()
 
+    def change_settings(self, user_model_settings, restart=False):
+        if self.csv_pipe_writer is None:
+            return
+        parameters_as_numbers = to_numbers(user_model_settings['parameters'])
+        parameters = [factor * parameters_as_numbers[key] for key, factor in self.settings_fields]
+        #self.csv_pipe_writer.write_fields(parameters)
 
 @dataclass
 class ModelBackendSettings(BaseModelBackendSettings):

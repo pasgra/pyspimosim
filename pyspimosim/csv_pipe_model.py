@@ -158,7 +158,7 @@ class CSVPipeReader:
 
 
 class CSVPipeWriter(ABC):
-    def __init__(self, path, settings_fields, new_fifo=True):
+    def __init__(self, path, new_fifo=False):
         self.path = path
 
         if new_fifo:
@@ -170,26 +170,26 @@ class CSVPipeWriter(ABC):
         if not os.path.exists(path):
             os.system(f"mkfifo {path}")
 
-        self.control = None
-        self.settings_fields = settings_fields
         self.file = None
 
     def open_file(self):
         # open with line buffering
-        self.file = open(self.path, "w", buffering=1)
+        self.file = os.fdopen(os.open(self.path, os.O_RDWR | os.O_NONBLOCK), "wb")
 
     def close(self):
         if not self.file is None:
             self.file.close()
         self.file = None
 
-    @abstractmethod
-    def go_on(self, t):
-        pass
+    def write_fields(self, fields):
+        self.writeline(" ".join(str(field) for field in fields))
 
-    def set_control(self, p):
-        self.control = [int(factor * p[key])
-                        for key, factor in self.settings_fields]
+    def writeline(self, line):
+        self.write(line + os.linesep)
+
+    def write(self, s):
+        self.file.write(s.encode())
+        self.file.flush()
 
 
 class CSVPipeModel(BaseModel):
@@ -198,10 +198,12 @@ class CSVPipeModel(BaseModel):
 
     def __init__(self, backend, model_backend_settings, user_model_settings):
         super().__init__(backend, model_backend_settings, user_model_settings)
+        self.csv_pipe_writer = None
         self.init_workdir()
         self.init_pipe_reader()
         self.state = self.csv_pipe_reader.buf[-1]
-        self.init_pipe_writer(user_model_settings)
+        self.init_pipe_writer(model_backend_settings)
+        self.change_settings(user_model_settings, True)
 
     def init_workdir(self):
         self.work_dir = self.model_backend_settings.workbasedir + "/" + \
@@ -221,10 +223,11 @@ class CSVPipeModel(BaseModel):
         )
 
     def change_settings(self, user_model_settings, restart=False):
-        self.p = to_numbers(user_model_settings['parameters'])
-
-        if not restart:
-            self.csv_pipe_writer.set_control(self.p)
+        if self.csv_pipe_writer is None:
+            return
+        parameters_as_numbers = to_numbers(user_model_settings['parameters'])
+        parameters = [factor * parameters_as_numbers[key] for key, factor in self.settings_fields]
+        self.csv_pipe_writer.write_fields(parameters)
 
     async def steps(self, vars_config, t, t_max, protocol, save_interval, next_send_time):
         try:
@@ -251,11 +254,12 @@ class CSVPipeModel(BaseModel):
         }
 
     def stop(self):
-        self.csv_pipe_writer.close()
+        if not self.csv_pipe_writer is None:
+            self.csv_pipe_writer.close()
         self.csv_pipe_reader.close()
 
     @abstractmethod
-    def init_pipe_writer(self, user_model_settings):
+    def init_pipe_writer(self, model_backend_settings):
         pass
 
     @abstractproperty
