@@ -147,6 +147,8 @@ class CSVPipeReader:
             warnings.simplefilter("ignore")
             raw = None
             for i in count():
+                if self.file is None:
+                    raise CSVPipeReaderEOF()
                 raw = np.loadtxt(self.file, max_rows=max_rows, ndmin=2, comments=None)
                 if raw.shape[0] != 0:
                     break
