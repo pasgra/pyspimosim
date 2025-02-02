@@ -61,7 +61,11 @@ class ServerSimulationBackend():
             self.handler.close()
             self.pause()
         except NoMoreDataException as e:
-            await self.handler.send_event({"type": "no_more_data", "t": self.t})
+            try:
+                await self.handler.send_event({"type": "no_more_data", "t": self.t})
+            except tornado.websocket.WebSocketClosedError as e:
+                self.handler.close()
+                self.pause()
         except Exception as e:
             self.handler.send_error(str(e))
             self.handler.close()
