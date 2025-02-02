@@ -153,7 +153,7 @@ async def start_servers(Model, backend_settings, model_backend_settings, custom_
     start_websocket_server(Model, backend_settings,
                            model_backend_settings, custom_tornado_handlers=())
     start_web_server(Model, backend_settings,
-                     model_backend_settings, custom_tornado_handlers=())
+                     model_backend_settings, custom_tornado_handlers=custom_tornado_handlers)
 
     # Start IO/Event loop
     shutdown_event = asyncio.Event()
