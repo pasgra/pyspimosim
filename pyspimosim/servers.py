@@ -38,7 +38,7 @@ class MimeStaticFileHandler(tornado.web.StaticFileHandler):
 
 class ChannelHandler(tornado.websocket.WebSocketHandler):
     def initialize(self, Model, model_backend_settings):
-        self.id = random.randint(0, 1e6)
+        self.id = random.randint(0, int(1e6))
 
         try:
             self.backend = ServerSimulationBackend(
