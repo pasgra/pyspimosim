@@ -88,8 +88,14 @@ class ChannelHandler(tornado.websocket.WebSocketHandler):
         for b in buffers:
             blocks += b
 
-        self.write_message(
-            header + blocks + bytes(json_msg, bin_msg_charset), binary=True)
+        message = header + blocks + bytes(json_msg, bin_msg_charset)
+        self.write_message(message, binary=True)
+
+        # Wait if we cannot keep up with sending to avoid growing the write buffer too much
+        print(len(message), len(self.ws_connection.stream._write_futures))
+        while len(self.ws_connection.stream._write_futures) > 2:
+            print("wait", len(self.ws_connection.stream._write_futures))
+            await asyncio.sleep(0.05)
 
     async def send_invalid_parameter(self, invalid_parameter, invalid_parameter_msg):
         self.write_message(json.dumps({

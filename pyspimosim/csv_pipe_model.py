@@ -7,10 +7,10 @@ import asyncio
 import warnings
 import numpy as np
 from abc import ABC, abstractmethod, abstractproperty
+from concurrent.futures import ThreadPoolExecutor
 from itertools import count
 from dataclasses import dataclass, field
 from pyspimosim.base_model import BaseModel, NoMoreDataException, ModelBackendSettings as BaseModelBackendSettings
-
 
 class CSVPipeReaderEOF(Exception):
     pass
@@ -35,6 +35,14 @@ def to_numbers(obj):
             logging.warning("Warning! Not a float: " + str(e))
             return 0
 
+async def async_loadtxt(file, max_rows=None, ndmin=None, comments=None, executor = ThreadPoolExecutor()):
+    loop = asyncio.get_event_loop()
+    def loadtxt():
+        try:
+            return np.loadtxt(file, max_rows=max_rows, ndmin=2, comments=None)
+        except ValueError:
+            return np.zeros((0, 0))
+    return await loop.run_in_executor(executor, loadtxt)
 
 class NoEOFReader(io.BufferedReader):
     encoding = "UTF-8"
@@ -130,6 +138,21 @@ class CSVPipeReader:
             self.file.close()
         self.file = None
 
+
+    def get_file_stat(self):
+        if self.file is None:
+            return 0, 0
+        try:
+            position = self.file.tell()
+        except io.UnsupportedOperation:
+            position = 0
+        try:
+            size = os.stat(self.path).st_size
+        except FileNotFoundError:
+            size = 0
+        return position, size
+
+
     async def fill_buffer(self, max_rows=None):
         if max_rows is None:
             max_rows = self.block_size
@@ -142,14 +165,16 @@ class CSVPipeReader:
             max_tries = -1
 
         if max_rows:
-            max_rows = min(max_rows, 2**22) # limit to 4 MiB
+            max_rows = min(max_rows, self.get_reasonable_max_chunk_size())
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             raw = None
             for i in count():
                 if self.file is None:
                     raise CSVPipeReaderEOF()
-                raw = np.loadtxt(self.file, max_rows=max_rows, ndmin=2, comments=None)
+                raw = await async_loadtxt(self.file, max_rows=max_rows, ndmin=2, comments=None)
+                if max_rows >= 2**13:
+                    await asyncio.sleep(0.1)
                 if raw.shape[0] != 0:
                     break
                 if i == max_tries:
@@ -157,6 +182,27 @@ class CSVPipeReader:
                 await asyncio.sleep(self.sleep_time)
 
             self.buf = raw
+
+    def get_reasonable_max_chunk_size(self):
+        # Limit amount of data to reasonable amount.
+        estimated_bytes_per_row = 10 * len(self.data_file_fields)
+        default_limit = 2 ** 20 / estimated_bytes_per_row
+        limit = default_limit
+        position, full_size = self.get_file_stat()
+        if position != 0:
+            # Use smaller chunks at beginning of file
+            if full_size != 0:
+                limit *= (position / full_size) ** 0.5
+            else:
+                # fallback: replace full_size with 100 * default_limit
+                limit *= (position / (100 * default_limit)) ** 0.5
+        if full_size != 0:
+            # Use larger chunks for large files
+            limit *= (full_size / default_limit) ** 0.5
+
+        max_limit = 100 * default_limit
+        limit = round(max(min(max_limit, limit), default_limit))
+        return limit
 
 
 class CSVPipeWriter(ABC):
