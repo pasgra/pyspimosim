@@ -44,6 +44,15 @@ async def async_loadtxt(file, max_rows=None, ndmin=None, comments=None, executor
             return np.zeros((0, 0))
     return await loop.run_in_executor(executor, loadtxt)
 
+async def async_loadtxt(file, max_rows=None, ndmin=None, comments=None, executor = ThreadPoolExecutor()):
+    loop = asyncio.get_event_loop()
+    def loadtxt():
+        try:
+            return np.loadtxt(file, max_rows=max_rows, ndmin=2, comments=None)
+        except ValueError:
+            return np.zeros((0, 0))
+    return await loop.run_in_executor(executor, loadtxt)
+
 class NoEOFReader(io.BufferedReader):
     encoding = "UTF-8"
     __buf = b""
@@ -129,6 +138,21 @@ class CSVPipeReader:
         if self.file is None:
             await self.open_file()
 
+
+    def get_file_stat(self):
+        if self.file is None:
+            return 0, 0
+        try:
+            position = self.file.tell()
+        except io.UnsupportedOperation:
+            position = 0
+        try:
+            size = os.stat(self.path).st_size
+        except FileNotFoundError:
+            size = 0
+        return position, size
+
+
         while self._skip_lines > 0:
             self.file.readline()
             self._skip_lines -= 1
@@ -182,6 +206,27 @@ class CSVPipeReader:
                 await asyncio.sleep(self.sleep_time)
 
             self.buf = raw
+
+    def get_reasonable_max_chunk_size(self):
+        # Limit amount of data to reasonable amount.
+        estimated_bytes_per_row = 10 * len(self.data_file_fields)
+        default_limit = 2 ** 20 / estimated_bytes_per_row
+        limit = default_limit
+        position, full_size = self.get_file_stat()
+        if position != 0:
+            # Use smaller chunks at beginning of file
+            if full_size != 0:
+                limit *= (position / full_size) ** 0.5
+            else:
+                # fallback: replace full_size with 100 * default_limit
+                limit *= (position / (100 * default_limit)) ** 0.5
+        if full_size != 0:
+            # Use larger chunks for large files
+            limit *= (full_size / default_limit) ** 0.5
+
+        max_limit = 100 * default_limit
+        limit = round(max(min(max_limit, limit), default_limit))
+        return limit
 
     def get_reasonable_max_chunk_size(self):
         # Limit amount of data to reasonable amount.
