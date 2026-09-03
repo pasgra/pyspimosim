@@ -95,6 +95,8 @@ def get_parser(models):
     parser.add_argument('--help', "-h", "-?", action=_HelpAction, help='Help')
 
     for model_name, (Model, ModelBackendSettings) in models.items():
+        if model_name == "www_model":
+            continue
         create_parser_from_data_class(ModelBackendSettings, parser=subparsers.add_parser(
             model_name, formatter_class=argparse.ArgumentDefaultsHelpFormatter), taken_short_options=taken_short_options)
 
