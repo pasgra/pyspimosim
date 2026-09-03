@@ -136,13 +136,13 @@ class BackendSettings:
                           "help": "Root directory for the web server"})
     www_address: str = field(default="0.0.0.0", metadata={
                              "help": "IP address for the web server"})
-    www_port: int = field(default=8000, metadata={
+    www_port: int = field(default=0, metadata={
                           "help": "Port for the web server"})
     www_model_root: str = field(default="", metadata={
                                 "help": "Directory containing index.html, model_config.js, model_info.html for model"})
     websocket_address: str = field(default="0.0.0.0", metadata={
                                    "help": "IP address for the websocket server"})
-    websocket_port: int = field(default=8090, metadata={
+    websocket_port: int = field(default=0, metadata={
                                 "help": "Port for the websocket server"})
 
 

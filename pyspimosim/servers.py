@@ -167,14 +167,14 @@ async def start_servers(Model, backend_settings, model_backend_settings, custom_
 
 
 def start_websocket_server(Model, backend_settings, model_backend_settings, custom_tornado_handlers=()):
-    tornado.web.Application([
+    app = tornado.web.Application([
         ("/", ChannelHandler, dict(Model=Model,
          model_backend_settings=model_backend_settings))
     ]).listen(backend_settings.websocket_port, backend_settings.websocket_address)
 
 
 def start_web_server(Model, backend_settings, model_backend_settings, custom_tornado_handlers=()):
-    tornado.web.Application([
+    app = tornado.web.Application([
         (get_pattern_for_all_files_in(backend_settings.www_model_root), MimeStaticFileHandler, dict(
             path=backend_settings.www_model_root, default_filename="index.html")),
         ("/+backend-config.js", BackendConfigHandler,
@@ -182,6 +182,12 @@ def start_web_server(Model, backend_settings, model_backend_settings, custom_tor
         *Model.get_tornado_handlers(backend_settings, model_backend_settings),
         *custom_tornado_handlers,
         ("/+(.*)", MimeStaticFileHandler, dict(path=backend_settings.www_root)),
-    ]).listen(backend_settings.www_port, backend_settings.www_address)
-    logging.info(get_listens_on_message(
-        backend_settings.www_address, backend_settings.www_port))
+    ])
+    sockets = tornado.netutil.bind_sockets(backend_settings.www_port, address=backend_settings.www_address)
+    server = tornado.httpserver.HTTPServer(app)
+    server.add_sockets(sockets)
+    if backend_settings.www_port == 0:
+        backend_settings.www_port = sockets[0].getsockname()[1]
+    logging.info(
+        get_listens_on_message(backend_settings.www_address, backend_settings.www_port)
+    )
