@@ -170,7 +170,12 @@ def start_websocket_server(Model, backend_settings, model_backend_settings, cust
     app = tornado.web.Application([
         ("/", ChannelHandler, dict(Model=Model,
          model_backend_settings=model_backend_settings))
-    ]).listen(backend_settings.websocket_port, backend_settings.websocket_address)
+    ])
+    sockets = tornado.netutil.bind_sockets(backend_settings.websocket_port, address=backend_settings.websocket_address)
+    server = tornado.httpserver.HTTPServer(app)
+    server.add_sockets(sockets)
+    if backend_settings.websocket_port == 0:
+        backend_settings.websocket_port = sockets[0].getsockname()[1]
 
 
 def start_web_server(Model, backend_settings, model_backend_settings, custom_tornado_handlers=()):
